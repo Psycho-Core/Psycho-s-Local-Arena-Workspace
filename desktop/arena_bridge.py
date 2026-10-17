@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arena Workspace Bridge — Windows desktop client.
+"""Psycho's Local Arena Workspace — Windows desktop client (Arena Workspace Bridge).
 
 Connects OUT to the Arena bridge relay, exposes one folder you choose, and
 lets the Arena agent (working in its chat session) browse, read, search and
@@ -110,6 +110,7 @@ class BridgeCore:
         data = json.dumps(body).encode("utf-8") if body is not None else None
         req = urllib.request.Request(url, data=data, method=method)
         req.add_header("X-Bridge-Token", self.token)
+        req.add_header("Connection", "close")
         if self.traffic_token:
             req.add_header("e2b-traffic-access-token", self.traffic_token)
         if data is not None:
@@ -128,7 +129,7 @@ class BridgeCore:
                 if not registered:
                     self._register()
                     registered = True
-                resp = self._http("GET", "/poll?wait=25", timeout=45)
+                resp = self._http("GET", "/poll?wait=15", timeout=40)
                 backoff = 1.0
                 self.on_status("Connected")
                 cmd = resp.get("command")
@@ -175,16 +176,30 @@ class BridgeCore:
         t0 = time.time()
         try:
             result = self.dispatch(op, params)
-            self._http("POST", "/result", {"id": cid, "ok": True, "result": result}, timeout=60)
-            self.on_log("✓ %s %s (%.2fs)" % (op, _brief(params), time.time() - t0))
+            payload = {"id": cid, "ok": True, "result": result}
+            note = "✓ %s %s (%.2fs)" % (op, _brief(params), time.time() - t0)
         except OpError as e:
-            self._http("POST", "/result",
-                       {"id": cid, "ok": False, "error": {"code": e.code, "message": str(e)}}, timeout=60)
-            self.on_log("✗ %s %s → %s" % (op, _brief(params), e))
+            payload = {"id": cid, "ok": False, "error": {"code": e.code, "message": str(e)}}
+            note = "✗ %s %s → %s" % (op, _brief(params), e)
         except Exception as e:
-            self._http("POST", "/result",
-                       {"id": cid, "ok": False, "error": {"code": "internal", "message": str(e)}}, timeout=60)
-            self.on_log("✗ %s %s → internal error: %s" % (op, _brief(params), e))
+            payload = {"id": cid, "ok": False, "error": {"code": "internal", "message": str(e)}}
+            note = "✗ %s %s → internal error: %s" % (op, _brief(params), e)
+        if not self._post_result(payload):
+            note += "  (result delivery failed — agent can requeue)"
+        self.on_log(note)
+
+    def _post_result(self, payload, attempts=4):
+        """Deliver a command result, retrying through transient proxy drops."""
+        for i in range(attempts):
+            try:
+                self._http("POST", "/result", payload, timeout=30)
+                return True
+            except Exception as e:
+                if i == attempts - 1:
+                    self.on_log("result delivery failed: %s" % self._explain(e))
+                    return False
+                self.stop_event.wait(1.0 + i)
+        return False
 
     # ---- path safety ----
 
@@ -215,6 +230,7 @@ class BridgeCore:
             "move": self.op_move,
             "glob": self.op_glob,
             "grep": self.op_grep,
+            "batch": self.op_batch,
         }
         fn = handlers.get(op)
         if not fn:
@@ -225,6 +241,22 @@ class BridgeCore:
             raise
         except OSError as e:
             raise OpError("%s: %s" % (e.strerror or type(e).__name__, e.filename or ""), "os_error")
+
+    def op_batch(self, params):
+        """Run several ops in one round trip (the proxy path is slow per call)."""
+        ops = params.get("ops") or []
+        if len(ops) > 25:
+            raise OpError("batch too large (max 25 ops)", "bad_request")
+        out = []
+        for i, item in enumerate(ops):
+            try:
+                r = {"ok": True, "result": self.dispatch(item.get("op"), item.get("params") or {})}
+            except OpError as e:
+                r = {"ok": False, "error": {"code": e.code, "message": str(e)}}
+            except Exception as e:
+                r = {"ok": False, "error": {"code": "internal", "message": str(e)}}
+            out.append(r)
+        return {"results": out}
 
     def op_ping(self, params):
         return {
@@ -447,7 +479,7 @@ def run_gui(initial_cfg):
     ui_queue = queue.Queue()
 
     root = tk.Tk()
-    root.title("Arena Workspace Bridge")
+    root.title("Psycho's Local Arena Workspace")
     root.geometry("680x620")
     root.minsize(560, 480)
 
@@ -582,7 +614,7 @@ def run_gui(initial_cfg):
         root.destroy()
 
     root.protocol("WM_DELETE_WINDOW", on_close)
-    ui_log("Arena Workspace Bridge v%s — paste the relay URL and token the agent gives you," % APP_VERSION)
+    ui_log("Psycho's Local Arena Workspace v%s — paste the relay URL and token the agent gives you," % APP_VERSION)
     ui_log("pick a folder, then Connect. You can Disconnect or close the window at any time.")
     drain_queue()
     root.mainloop()

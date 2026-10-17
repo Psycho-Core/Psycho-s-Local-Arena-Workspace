@@ -4,5 +4,6 @@ This relay is waiting for your Windows app to connect. You can close this page o
 Your traffic token
 The proxy passed it through — copy this into the Traffic token field in the desktop app:
 
+       ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
 source: header:e2b-traffic-access-token  ·  click the box, then Ctrl+A, Ctrl+C

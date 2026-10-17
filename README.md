@@ -1,11 +1,81 @@
-# Arena Workspace Bridge
+<p align="center">
+  <img src="assets/logo-enhanced.png" width="220" alt="Psycho's Local Arena Workspace logo">
+</p>
 
-Connect a folder on your **Windows PC** to the Arena agent working in this chat —
-so I can browse, read, search, and edit your local files directly.
+<h1 align="center">Psycho's Local Arena Workspace</h1>
+
+<p align="center">
+  <b>Connect a folder on your PC to an AI agent working in a browser chat.</b><br>
+  The agent can browse, read, search, and edit your local files — live, securely,
+  and only inside the folder you choose.
+</p>
+
+<p align="center">
+  <a href="#-quick-start-windows">Quick Start</a> ·
+  <a href="#-how-it-works">How It Works</a> ·
+  <a href="#-what-the-agent-can-do">Capabilities</a> ·
+  <a href="#-security">Security</a> ·
+  <a href="#-the-traffic-token">Traffic Token</a> ·
+  <a href="SESSION_GUIDE.md">Session Guide</a>
+</p>
+
+<p align="center">
+  <sub>Powered by the Arena Workspace Bridge engine · Python 3.8+ · stdlib only · Windows / macOS / Linux · outbound-only · no accounts · no telemetry</sub>
+</p>
+
+---
+
+## Why
+
+AI coding agents usually run in the cloud and can't touch the files on your
+machine. **Psycho's Local Arena Workspace** fixes that: a tiny desktop app dials
+*out* to a relay run by your agent session — no firewall holes, no port
+forwarding, no cloud storage middleman. Pick a folder, and that folder becomes
+the agent's workspace.
+
+## ✨ Features
+
+- **Zero install** — one Python file, standard library only; `run_bridge.bat` and go
+- **Outbound-only** — your PC never accepts incoming connections
+- **Folder jail** — `..`, absolute paths, and symlink escapes are all rejected
+- **You hold the switches** — reads always work; writes and deletes are separate
+  toggles (deletes off by default)
+- **No shell access** — filesystem operations only (deliberate; see Roadmap)
+- **Welcome document** — every fresh connection drops a `HELLO.txt` into your
+  shared folder, complete with the mascot in ASCII art
+- **Live activity log** — every operation the agent performs, on screen, as it happens
+- **Auto-reconnect with backoff** — survives network blips; remembers your settings
+- **Batch mode** — up to 25 operations in a single round trip
+- **Binary-safe** — reads/writes images and binaries via base64
+
+## 🚀 Quick Start (Windows)
+
+1. **Install Python 3** — [python.org](https://www.python.org/downloads/) (tick
+   *"Add python.exe to PATH"*) or `winget install Python.Python.3.12`.
+2. **Get the app** — download `desktop/arena_bridge.py` + `desktop/run_bridge.bat`
+   anywhere on your PC and double-click `run_bridge.bat`.
+3. **Ask your agent session** to start the relay. It will hand you three things:
+   the **Relay URL**, a **Token**, and instructions for the **Traffic token**
+   (see [below](#-the-traffic-token)).
+4. **Paste all three into the app**, pick the folder to share, tick permissions,
+   hit **Connect**. Status turns green when the agent can see your folder — and a
+   friendly `HELLO.txt` appears in the folder to prove it.
+
+Settings are remembered in `%USERPROFILE%\.arena_bridge_config.json` — next time
+you just double-click and Connect.
+
+Headless mode (optional):
+
+```
+python arena_bridge.py --relay https://8765-xxxx.e2b.app --token PASTE-TOKEN ^
+    --e2b-token PASTE-TRAFFIC-TOKEN --root C:\work\my-project [--read-only] [--allow-delete]
+```
+
+## 🏗 How It Works
 
 ```
 ┌────────────────────────────┐            ┌─────────────────────────────┐
-│  Your Windows PC           │            │  Arena agent sandbox        │
+│  Your PC                   │            │  Agent sandbox              │
 │                            │  outbound  │                             │
 │  arena_bridge.py (GUI)     │   HTTPS    │  relay.py  ◄── agent talks  │
 │   └─ the folder you pick   │◄──────────►│  (public preview URL)       │
@@ -13,61 +83,12 @@ so I can browse, read, search, and edit your local files directly.
 └────────────────────────────┘            └─────────────────────────────┘
 ```
 
-Your PC makes **outbound** connections only — no firewall holes, no port forwarding,
-no account. One shared random token authenticates everything.
+Your app keeps a long-poll open against the relay. The agent enqueues JSON
+commands (`read`, `write`, `grep`, …); the app executes them inside the folder
+jail and posts results back. A shared random token authenticates every request,
+and every fresh connection regenerates `HELLO.txt` in your folder.
 
----
-
-## Quick start (Windows)
-
-1. **Install Python 3** if you don't have it:
-   - Download from <https://www.python.org/downloads/> and tick **"Add python.exe to PATH"**, or
-   - run `winget install Python.Python.3.12` in a terminal.
-2. **Get the files** — download the `desktop/` folder (`arena_bridge.py` + `run_bridge.bat`)
-   anywhere on your PC, e.g. `C:\Tools\arena-bridge\`.
-3. **Ask the agent** (in the Arena chat) to start the relay. It will give you:
-   - a **Relay URL** (looks like `https://8765-xxxx.e2b.app`)
-   - a **Token** (long random string)
-   - a **Traffic token** (see below — needed to reach the relay from your PC)
-4. **Run** `run_bridge.bat` (or `python arena_bridge.py`).
-5. Paste the **Relay URL**, **Token** and **Traffic token**, **Browse** to the folder
-   you want to share, tick permissions, click **Connect**.
-
-Status turns green when the agent can see your folder. Tell me in the chat and I'll
-start working on your files. The window log shows every operation I perform.
-
-Settings are remembered in `%USERPROFILE%\.arena_bridge_config.json` — next time
-you just double-click and hit Connect.
-
-### Traffic token (preview proxy)
-
-The relay URL lives behind Arena's sandbox proxy (e2b), which requires one extra
-header — `e2b-traffic-access-token`. The **Arena platform automatically supplies it
-in your browser** (that's what powers the live preview), but a desktop app has to
-send it itself. To get the value:
-
-1. Click the **live preview** of the relay in the Arena chat (or open the Relay
-   URL in that same browser).
-2. Open **DevTools → Network**, refresh, click any request to the relay.
-3. Copy the value of the request header `e2b-traffic-access-token`
-   (or the same-named cookie under *Application → Cookies*).
-4. Paste it into the **Traffic token** field in the app.
-
-It's per-sandbox and expires with the session — when the agent gives you a new
-Relay URL, grab a fresh traffic token the same way.
-
-### Headless mode (optional)
-
-```
-python arena_bridge.py --relay https://8765-xxxx.e2b.app --token PASTE-TOKEN ^
-    --e2b-token PASTE-TRAFFIC-TOKEN --root C:\work\my-project
-python arena_bridge.py ... --read-only            # no writes
-python arena_bridge.py ... --allow-delete         # permit deletes
-```
-
----
-
-## What the agent can do
+## 🤖 What the Agent Can Do
 
 | Op       | Description                                        |
 |----------|----------------------------------------------------|
@@ -75,122 +96,82 @@ python arena_bridge.py ... --allow-delete         # permit deletes
 | `list`   | List a directory                                   |
 | `stat`   | File/dir metadata                                  |
 | `read`   | Read a file (≤10 MB; binary returned as base64)    |
-| `write`  | Create/overwrite/append a file                     |
+| `write`  | Create / overwrite / append a file                 |
 | `mkdir`  | Create a directory                                 |
 | `delete` | Delete a file or dir (toggle; recursive is explicit)|
 | `move`   | Rename / move within the shared folder             |
 | `glob`   | Find files by name pattern                         |
 | `grep`   | Search file contents with a regex                  |
+| `batch`  | Run up to 25 of the above in one round trip        |
 
 **Deliberately NOT included:** running shell commands or programs on your PC.
-This is a file bridge only. (An opt-in "allow commands" mode may come later.)
 
----
+## 🔑 The Traffic Token
 
-## Security model
+The relay lives behind the sandbox preview proxy (e2b), which requires one extra
+header — `e2b-traffic-access-token`. **Your browser gets it automatically** from
+the platform (that's what powers live previews), but a desktop app must present
+it itself. To grab the value:
 
-- **Folder jail** — only the folder you pick is reachable. Every path is
-  `realpath`-resolved and rejected if it escapes the root (including `..`,
-  absolute paths, and symlink escapes).
-- **You hold the switches** — reads are always on; writes and deletes are
-  separate checkboxes (deletes default **off**). The app refuses ops that
-  exceed the toggles.
-- **Shared random token** — every request must carry the session token.
-  Don't paste it into public chats/screenshots.
-- **Traffic token** — the e2b preview proxy additionally requires the
-  `e2b-traffic-access-token` header (grab it from your browser as described
-  above). It gates *all* traffic into this sandbox, not just the bridge.
-- **No inbound ports on your PC** — the app dials out to the relay over HTTPS.
-- **Everything is logged** — the app window shows each operation as it happens.
-- **You can stop it anytime** — Disconnect button, or just close the window.
+1. Open the Relay URL in the same browser where your agent chat is open —
+   the landing page shows **"Your traffic token"** in a copyable box.
+2. Not shown? Press **F12 → Network → Ctrl+R**, click the first request, and copy
+   the `e2b-traffic-access-token` **request header** (fallback: **Application →
+   Cookies**).
 
-Treat the token like a password for the shared folder: anyone holding the URL +
-token could queue file commands for the connected client. The token is
-single-session and changes whenever a new relay is started.
+It's per-session: when a new agent session gives you a new Relay URL, grab a
+fresh one the same way.
 
----
+## 🔒 Security
 
-## Session lifetime & reconnecting
+- **Folder jail** — every path is `realpath`-resolved and rejected if it escapes
+  the shared root (including `..`, absolute paths, and symlink tricks).
+- **Two secrets** — a session bridge token *and* the proxy traffic token gate
+  all traffic.
+- **Permission toggles** — reads always on; writes and deletes are yours to
+  grant (deletes default **off**).
+- **No command execution** — ever, in this version.
+- **Full transparency** — the app's activity log shows every operation;
+  Disconnect or close the window to stop instantly.
 
-The relay lives in the Arena chat sandbox. If the sandbox restarts, the agent
-will start a new relay and give you a **new URL and token** — paste them into
-the app and reconnect. Your client auto-retries with backoff if the connection
-drops. For a permanent setup you can run `relay/relay.py` yourself on any
-always-on machine (`python relay.py --port 8765 --token <pick-one>`) and point
-the app at it.
+Treat the tokens like passwords for the shared folder. They rotate every session.
 
----
+## 🧪 Testing
 
-## Getting an Arena API key
-
-You asked about an Arena API key — **yes, keys exist** and you create them
-yourself in the Arena API dashboard:
-
-- **Create a key:** <https://portal.api.preview.arena.ai/dashboard/keys>
-  (open the Keys page → *Create a new key* → copy it; it's shown only once).
-- **What it's for:** the Arena gateway (`https://api.preview.arena.ai`) is
-  Anthropic-compatible — it can power Claude Code / Claude Desktop / OpenCode
-  on your machine instead of an Anthropic account. There's even a quickstart
-  script for that: `curl -fsSL https://portal.api.preview.arena.ai/setup.sh | bash`
-- **Good to know:** free-router keys are currently limited to the Claude Code
-  harness (Cowork / Agent SDK return 403 unless your workspace has API access),
-  so it's in preview and scope may vary by plan.
-
-**You don't need an API key for this bridge** — I'm already the AI on this side
-of the chat. A key only becomes useful if you later want the desktop app to
-have its own standalone AI features (see Roadmap).
-
----
-
-## How it works (protocol)
-
-All JSON over HTTP. Auth header: `X-Bridge-Token: <token>`.
-
-| Call | Who | Purpose |
-|------|-----|---------|
-| `GET /health` | anyone | liveness probe |
-| `GET /status` | agent | clients + queue summary |
-| `POST /register` | client | announce client + workspace label |
-| `GET /poll?wait=25` | client | long-poll for the next command |
-| `POST /result` | client | report command outcome |
-| `POST /cmd` | agent | enqueue `{op, params}` → `{id}` |
-| `GET /cmd/<id>?wait=25` | agent | long-poll for the result |
-| `POST /cmd/<id>/requeue` | agent | resend a command lost mid-flight |
-
-Command status lifecycle: `pending → sent → done | error`.
-
----
-
-## Repo layout
+Three suites, **43 checks**, nothing to install:
 
 ```
-arena-bridge/
+python3 tests/test_flow.py        # 24 — protocol ops, path jail, permissions
+python3 tests/test_gui_smoke.py   #  9 — every GUI code path (display-free)
+python3 tests/test_e2e_process.py # 10 — real entrypoints, end-to-end
+```
+
+## 📦 Repo Layout
+
+```
+psycho-local-arena-workspace/
 ├── README.md               ← you are here
+├── SESSION_GUIDE.md        ← how a new agent session reconnects the bridge
+├── assets/logo-512.png     ← the mascot
 ├── desktop/
-│   ├── arena_bridge.py     ← Windows app (GUI + headless, stdlib only)
-│   └── run_bridge.bat      ← double-click launcher
+│   ├── arena_bridge.py     ← desktop app (GUI + headless, stdlib only)
+│   └── run_bridge.bat      ← double-click launcher (Windows)
 ├── relay/
-│   └── relay.py            ← relay server (runs on the agent side)
-└── tests/
-    ├── test_flow.py        ← protocol suite: 24 checks (ops, jail, permissions)
-    ├── test_gui_smoke.py   ← GUI suite: 9 checks (every window code path)
-    └── test_e2e_process.py ← process suite: 10 checks (real entrypoints end-to-end)
+│   └── relay.py            ← relay server (agent side; auto-sends HELLO.txt)
+├── agent_cli.py            ← agent-side command helper
+└── tests/                  ← the three test suites
 ```
 
-Run the tests anywhere (needs nothing installed):
-
-```
-python3 tests/test_flow.py
-python3 tests/test_gui_smoke.py
-python3 tests/test_e2e_process.py
-```
-
----
-
-## Roadmap ideas
+## 🗺 Roadmap
 
 - [ ] Opt-in "allow command execution" with per-command approval prompts
 - [ ] System-tray mode with pause/resume
-- [ ] Standalone AI chat in the app via an Arena API key
-- [ ] One-file `.exe` build via PyInstaller (`pyinstaller -F -w arena_bridge.py`)
+- [ ] Standalone AI chat in the app (bring your own API key)
+- [ ] One-file `.exe` via PyInstaller (`pyinstaller -F -w arena_bridge.py`)
 - [ ] Multi-folder shares and per-folder permissions
+
+---
+
+<p align="center">
+  <sub>Psycho's Local Arena Workspace · Add a license before publishing.</sub>
+</p>
