@@ -34,9 +34,9 @@ HELLO!
                        ..:::-------::..                       
                                                               
 
-Connected at : 2026-10-17 06:50:00
-Shared folder: D:\MangosCata-bots
-Computer     : Windows 11 (AMD64)
+Connected at : 
+Shared folder: 
+Computer     : 
 
 The agent can now read and edit files in this folder.
 This document is regenerated every time the connection is made.
