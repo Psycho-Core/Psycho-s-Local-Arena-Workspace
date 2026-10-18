@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <sub>Powered by the Arena Workspace Bridge engine · Python 3.8+ · stdlib only · Windows / macOS / Linux · outbound-only · no accounts · no telemetry</sub>
+  <sub>Powered by the Arena Workspace Bridge engine · Python 3.8+ · stdlib only · Windows / macOS / Linux · outbound-only · no accounts · no telemetry · MIT licensed</sub>
 </p>
 
 ---
@@ -172,6 +172,29 @@ psycho-local-arena-workspace/
 
 ---
 
+## 📄 License & Legal
+
+**License: MIT — see [LICENSE](LICENSE).** Do whatever you like with this
+software: use it, change it, sell it, ship it. No permission needed.
+
+### Disclaimer (the important bit)
+
+- **Not affiliated with Arena.ai.** Psycho's Local Arena Workspace is an
+  independent, unofficial project. It is not endorsed by, sponsored by, or
+  connected to Arena.ai, e2b, or any other company or service it interacts
+  with. All trademarks belong to their respective owners.
+- **Provided "AS IS", without warranty of any kind.** There is no guarantee
+  that the software works, is secure, or is fit for any particular purpose.
+- **Use entirely at your own risk.** To the maximum extent permitted by law,
+  the author(s) and contributors are **not liable** for any damage, data loss,
+  security incidents, or other consequences — direct, indirect, or incidental —
+  arising from the use or misuse of this software.
+- **You control access.** This tool reads and writes files inside the folder
+  *you* choose to share, using tokens that *you* paste in. You are responsible
+  for protecting those tokens, choosing what to share, and having the right to
+  share it. Do not run it on systems you do not own or are not authorised to
+  operate.
+
 <p align="center">
-  <sub>Psycho's Local Arena Workspace · Add a license before publishing.</sub>
+  <sub>Psycho's Local Arena Workspace · MIT License · Not affiliated with Arena.ai</sub>
 </p>
