@@ -174,7 +174,7 @@ psycho-local-arena-workspace/
 
 ## 📄 License & Legal
 
-**License: MIT — see [LICENSE](LICENSE).** Do whatever you like with this
+**License: MIT — see [LICENSE](LICENSE.txt).** Do whatever you like with this
 software: use it, change it, sell it, ship it. No permission needed.
 
 ### Disclaimer (the important bit)
